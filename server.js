@@ -1,78 +1,34 @@
 const express = require('express');
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
-
 const app = express();
+
 app.use(express.static('public'));
 app.use(express.json());
 
-app.post('/api/convert', (req, res) => {
+app.post('/api/convert', async (req, res) => {
     const { url, format } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
 
-    const fileId = uuidv4();
     const isAudio = format === 'mp3';
-    
-    // Save to Linux temporary directory
-    const outputTemplate = `/tmp/${fileId}.%(ext)s`;
-    
-    // Injecting the client spoofing bypasses
-    let args = [
-        '--rm-cache-dir',
-        '--extractor-args', 'youtube:player_client=tv_downgraded,web_embedded,android_vr',
-        '-o', outputTemplate,
-        '--no-playlist'
-    ];
 
-    if (isAudio) {
-        args.push('-f', 'bestaudio', '--extract-audio', '--audio-format', 'mp3');
-    } else {
-        args.push('-f', 'bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]/best');
-    }
-    
-    args.push(url);
-
-    const ytProcess = spawn('yt-dlp', args);
-    let errorLog = '';
-
-    ytProcess.stderr.on('data', (data) => {
-        errorLog += data.toString();
-    });
-
-    ytProcess.on('close', (code) => {
-        if (code !== 0) {
-            console.error('yt-dlp failed:', errorLog);
-            return res.status(500).json({ 
-                error: 'Conversion failed on the server.', 
-                details: errorLog.includes('Sign in') ? 'Bot detection blocked the request.' : 'Media processing error.' 
-            });
-        }
+    try {
+        // We use a public API to handle the extraction, bypassing Render's IP ban
+        const apiUrl = `https://api.socialdownloaders.com/v1/social/autolink?url=${encodeURIComponent(url)}&format=${isAudio ? 'mp3' : '720'}`;
         
-        // Find the generated file (yt-dlp determines final extension)
-        fs.readdir('/tmp', (err, files) => {
-            if (err) return res.status(500).json({ error: 'Failed to access storage' });
-            
-            const downloadedFile = files.find(f => f.startsWith(fileId));
-            if (!downloadedFile) return res.status(500).json({ error: 'File missing after conversion.' });
-            
-            res.json({ success: true, downloadUrl: `/api/download/${downloadedFile}` });
-        });
-    });
-});
+        const response = await fetch(apiUrl);
+        const data = await response.json();
 
-app.get('/api/download/:filename', (req, res) => {
-    const filepath = path.join('/tmp', req.params.filename);
-    
-    if (fs.existsSync(filepath)) {
-        res.download(filepath, (err) => {
-            if (err) console.error('Download error:', err);
-            // Cleanup file instantly to preserve server space
-            if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+        if (data && data.url) {
+            // Send the direct download link back to the frontend
+            res.json({ success: true, downloadUrl: data.url });
+        } else {
+            throw new Error('API failed to extract the video.');
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            error: 'Conversion failed', 
+            details: 'Could not bypass YouTube security. Try again later.' 
         });
-    } else {
-        res.status(404).send('File not found or link expired.');
     }
 });
 
