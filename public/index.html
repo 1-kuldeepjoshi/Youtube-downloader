@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free YouTube Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="max-w-md w-full bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+        <h1 class="text-2xl font-bold text-center mb-6 text-red-500">YouTube Downloader</h1>
+        
+        <div class="space-y-4">
+            <input type="text" id="videoUrl" placeholder="Paste YouTube URL here..." 
+                   class="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white">
+
+            <select id="format" class="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white">
+                <option value="mp3">Audio (MP3)</option>
+                <option value="mp4">Video (MP4 - 720p)</option>
+            </select>
+
+            <button onclick="convertVideo()" id="btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+                Convert Video
+            </button>
+        </div>
+
+        <div id="status" class="mt-4 text-center text-sm hidden"></div>
+        
+        <div id="result" class="mt-4 hidden">
+            <a id="downloadLink" href="#" class="block w-full text-center bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+                🚀 Download File
+            </a>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
