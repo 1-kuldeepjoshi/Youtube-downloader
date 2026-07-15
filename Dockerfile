@@ -1,6 +1,7 @@
-FROM node:18-bullseye-slim
+# Switching to bookworm-slim ensures apt-get installs Python 3.11+
+FROM node:20-bookworm-slim
 
-# Install Python, FFmpeg, and curl
+# Install Python 3.11, FFmpeg, and curl
 RUN apt-get update && apt-get install -y ffmpeg python3 curl
 
 # Download the latest yt-dlp binary directly
